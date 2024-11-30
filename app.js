@@ -3,7 +3,7 @@ const cors = require("cors"); // Import cors
 const mongoose = require("mongoose");
 require('dotenv').config();
 const app = express();
-const port = process.env.PORT
+const port = process.env.PORT || 3000;
 
 // Use CORS middleware
 app.use(cors());
@@ -12,18 +12,22 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB connection (use your connection string here)
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB connected successfully"))
     .catch((err) => console.error("Error connecting to MongoDB:", err.message));
 
 // Define Book schema and model
 const bookSchema = new mongoose.Schema({
-    title: { type: String, required: true },
     shortTitle: { type: String, required: true },
-   
+    fullTitle: { type: String },
+    author: { type: String },
+    ratings: { type: Number },
+    price: { type: Number },
+    category: { type: String },
+    stock: { type: Number },
+    image: { type: String },
+    isbn: { type: String },
+    description: { type: String },
 });
 
 const Book = mongoose.model("Book", bookSchema);

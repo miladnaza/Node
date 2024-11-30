@@ -47,6 +47,16 @@ app.get("/api/books", async (req, res) => {
   }
 });
 
+app.get('/api/Books', async (req, res) => {
+    try {
+      const books = await Book.find(); // Use 'Book' model to query 'Books' collection
+      console.log("Fetched Books:", books);
+      res.json(books);
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to fetch books' });
+    }
+  });
+
 
 app.get("/api/books/search", async (req, res) => {
     try {

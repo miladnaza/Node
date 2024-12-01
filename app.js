@@ -200,6 +200,67 @@ app.get("/api/books/rate/below-5", async (req, res) => {
     }
 });
 
+app.post('/register', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Please enter your email and password' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
+    }
+
+    try {
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(409).json({ message: 'Email already exists' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10).catch((error) => {
+            console.error('Password hashing error:', error);
+            throw error;
+        });
+        const newUser = new User({ email, password: hashedPassword });
+        await newUser.save();
+        res.status(201).json({ message: 'Signup successful!' });
+    } catch (error) {
+        console.error('Signup error:', error);
+        res.status(500).json({ message: 'Server error. Please try again.' });
+    }
+});
+
+
+
+app.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Please enter your email and password.' });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'The password does not match.' });
+    }
+
+    res.status(200).json({ message: 'Login successful!', user: { id: user._id, email: user.email } });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
   
 
 

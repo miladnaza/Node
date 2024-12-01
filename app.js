@@ -103,6 +103,27 @@ app.get("/api/ads", async (req, res) => {
     }
 });
 
+app.get("/api/books/shortTitle/:shortTitle", async (req, res) => {
+  const shortTitle = decodeURIComponent(req.params.shortTitle).trim(); // Decode and clean input
+  console.log("Processed shortTitle:", shortTitle); // Debugging log
+
+  try {
+    // Perform case-insensitive and flexible matching
+    const books = await Book.find({
+      shortTitle: { $regex: `^${shortTitle}$`, $options: "i" }, // Exact match
+    });
+
+    if (!books.length) {
+      return res.status(404).json({ message: "No books found with this shortTitle." });
+    }
+
+    res.json(books);
+  } catch (error) {
+    console.error("Error fetching books by shortTitle:", error.message);
+    res.status(500).json({ error: "Failed to fetch books by shortTitle" });
+  }
+});
+
 // API route to fetch books filtered by category
 app.get("/api/books/category/:category", async (req, res) => {
     const { category } = req.params;

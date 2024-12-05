@@ -203,72 +203,96 @@ app.get("/api/books/rate/below-5", async (req, res) => {
 
 // User Schema & Model
 const userSchema = new mongoose.Schema({
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    firstName: { type: String, required: true }, 
+    lastName: { type: String, required: true }, 
+    phoneNumber: { type: String, required: true }, 
+    email: { type: String, required: true, unique: true }, 
+    password: { type: String, required: true }, 
 });
+
 const User = mongoose.model("User", userSchema);
 
 // Register Endpoint
-app.post("/register", async (req, res) => {
-    const { email, password } = req.body;
+app.post('/register', async (req, res) => {
+    const { firstName, lastName, phoneNumber, email, password } = req.body;
 
-    // Input validation
-    if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required." });
+
+    if (!firstName || !lastName || !phoneNumber || !email || !password) {
+        return res.status(400).json({ message: 'Please fill in all fields.' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Please provide a valid email address.' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long.' });
     }
 
     try {
-        // Check if user already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(400).json({ message: "Email is already registered." });
+            return res.status(409).json({ message: 'Email already exists' });
         }
 
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 10);
+  
+        const hashedPassword = await bcrypt.hash(password, 10).catch((error) => {
+            console.error('Password hashing error:', error);
+            throw error;
+        });
 
-        // Create and save the new user
-        const newUser = new User({ email, password: hashedPassword });
+        const newUser = new User({
+            firstName,
+            lastName,
+            phoneNumber,
+            email,
+            password: hashedPassword,
+        });
+
         await newUser.save();
-
-        res.status(201).json({ message: "Signup successful!" });
+        res.status(201).json({ message: 'Signup successful!' });
     } catch (error) {
-        console.error("Signup error:", error);
-        res.status(500).json({ message: "Server error. Please try again." });
+        console.error('Signup error:', error);
+        res.status(500).json({ message: 'Server error. Please try again.' });
     }
 });
 
-// Login Endpoint
-app.post("/login", async (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    // Input validation
     if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required." });
+        return res.status(400).json({ message: 'Please enter your email and password.' });
     }
 
     try {
-        // Find the user by email
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
+            return res.status(404).json({ message: 'User not found.' });
         }
 
-        // Compare passwords
         const isPasswordValid = await bcrypt.compare(password, user.password);
+        console.log("Password valid:", isPasswordValid);
         if (!isPasswordValid) {
-            return res.status(401).json({ message: "Invalid email or password." });
+            return res.status(401).json({ message: 'The password does not match.' });
         }
 
         res.status(200).json({
-            message: "Login successful!",
-            user: { id: user._id, email: user.email },
+            message: 'Login successful!',
+            user: {
+                id: user._id,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                phoneNumber: user.phoneNumber,
+                email: user.email,
+            },
         });
     } catch (error) {
-        console.error("Login error:", error);
-        res.status(500).json({ message: "Server error. Please try again." });
+        console.error('Login error:', error);
+        res.status(500).json({ message: 'Server error. Please try again.' });
     }
 });
+  
 
 
   

@@ -8,18 +8,21 @@ This repository contains the backend logic and API endpoints for the Book E-comm
 * Third item
 ## 📋 Features
    - **Books API:**
-  - Fetch all books or retrieve random samples.
-  - Search and filter books by title, category, author, or rating.
-  - Support flexible query options, including case-insensitive and partial matches.
+     - Fetch all books or retrieve random samples.
+     - Search and filter books by title, category, author, or rating.
+     - Support flexible query options, including case-insensitive and partial matches.
     - **Users API:**
       * Secure user registration with password hashing using bcrypt.js.
       * User login with authentication and session management.
-**Ads API:**
-    - Retrieve and manage advertisements to display promotional content at the top of the Website.
-**Secure Authentication:**
-    - Token-based authentication using JSON Web Tokens (JWT).
-**Robust Input Validation:**
-    - Ensures all API endpoints handle errors gracefully and securely.
+- **Ads API:**
+  - Retrieve and manage advertisements for displaying promotional content at the top of the website.
+
+- **Secure Authentication:**
+  - Implement token-based authentication using JSON Web Tokens (JWT).
+
+- **Robust Input Validation:**
+  - Ensure all API endpoints handle errors gracefully and securely.
+
 
 ## 🛠 Tech Stack
 - **Runtime**: Node.js

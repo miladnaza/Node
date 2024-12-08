@@ -294,8 +294,126 @@ app.post('/login', async (req, res) => {
 });
   
 
+// API route to submit a new review and update book ratings
+app.post("/api/reviews", async (req, res) => {
+  const { bookId, rating, review, reviewTitle, nickname, email, location, incentive } = req.body;
+
+  // Input validation
+  if (!bookId || !rating || !review || !reviewTitle || !nickname || !email || !location) {
+    return res.status(400).json({ message: "All required fields must be filled" });
+  }
+
+  try {
+    // Save the new review
+    const newReview = new Review({
+      bookId,
+      rating,
+      review,
+      reviewTitle,
+      nickname,
+      email,
+      location,
+      incentive: incentive || "No",
+    });
+    await newReview.save();
+
+    // Fetch the book to update its rating
+    const book = await Book.findById(bookId);
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+
+    // Update the book's average rating
+    const reviews = await Review.find({ bookId });
+    const totalReviews = reviews.length;
+    const averageRating = reviews.reduce((acc, review) => acc + review.rating, 0) / totalReviews;
+
+    book.ratings = parseFloat(averageRating.toFixed(1)); // Round to 1 decimal place
+    await book.save();
+
+    res.status(201).json({ message: "Review submitted successfully!", review: newReview, updatedBook: book });
+  } catch (error) {
+    console.error("Error submitting review:", error.message);
+    res.status(500).json({ error: "Failed to submit review" });
+  }
+});
+const reviewSchema = new mongoose.Schema({
+    bookId: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    review: { type: String, required: true },
+    reviewTitle: { type: String, required: true },
+    nickname: { type: String, required: true },
+    email: { type: String, required: true },
+    location: { type: String, required: true },
+    incentive: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Review = mongoose.model("Review", reviewSchema);
+
+// POST API for Submitting Reviews
+app.post("/api/reviews", async (req, res) => {
+    try {
+        const newReview = new Review(req.body); // Create a new review from request body
+        await newReview.save(); // Save the review to the database
+
+        // After saving the review, update the book's average rating
+        const reviews = await Review.find({ bookId: newReview.bookId }); // Get all reviews for this book
+        const totalReviews = reviews.length;
+        const averageRating = reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews;
+
+        // Update the book's rating in the Book collection
+        await Book.findByIdAndUpdate(
+            newReview.bookId, // Book ID
+            { ratings: averageRating.toFixed(2) }, // Update with new average rating
+            { new: true } // Return the updated document
+        );
+
+        res.status(201).json({ message: "Review submitted successfully and book rating updated!" });
+    } catch (error) {
+        console.error("Error submitting review:", error.message);
+        res.status(500).json({ error: "Failed to submit review and update book rating" });
+    }
+});
 
   
+// API route to fetch reviews for a specific book by bookId
+app.get("/api/reviews/book/:bookId", async (req, res) => {
+    const { bookId } = req.params;
+
+    try {
+        // Fetch reviews with the matching bookId
+        const reviews = await Review.find({ bookId });
+
+        if (!reviews.length) {
+            return res.status(404).json({ message: "No reviews found for this book." });
+        }
+
+        // Calculate rating snapshot
+        const ratingSnapshot = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        reviews.forEach((review) => {
+            if (review.rating >= 1 && review.rating <= 5) {
+                ratingSnapshot[review.rating]++;
+            }
+        });
+
+        const totalReviews = reviews.length;
+        const averageRating = totalReviews
+            ? (reviews.reduce((sum, review) => sum + review.rating, 0) / totalReviews).toFixed(1)
+            : 0;
+
+        res.json({
+            reviews,
+            ratingSnapshot,
+            totalReviews,
+            averageRating,
+        });
+    } catch (error) {
+        console.error("Error fetching reviews:", error.message);
+        res.status(500).json({ error: "Failed to fetch reviews." });
+    }
+});
+
 
 
 // Start the server

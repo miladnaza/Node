@@ -7,10 +7,10 @@ This repository contains the backend logic and API endpoints for the Book E-comm
 * Second item
 * Third item
 ## 📋 Features
-    - **Books API:**
-* Fetch all books or random samples.
-* Search and filter books by title, category, author, or rating.
-* Flexible query options with case-insensitive and partial matches.
+   - **Books API:**
+  - Fetch all books or retrieve random samples.
+  - Search and filter books by title, category, author, or rating.
+  - Support flexible query options, including case-insensitive and partial matches.
     - **Users API:**
       * Secure user registration with password hashing using bcrypt.js.
       * User login with authentication and session management.

@@ -2,6 +2,10 @@
 # Book E-commerce Website - Backend
 
 This repository contains the backend logic and API endpoints for the Book E-commerce Website, acting as the bridge between the frontend and the database. It manages user authentication, book data operations, and ad retrieval to deliver a seamless e-commerce experience.
+
+* First item
+* Second item
+* Third item
 ## 📋 Features
 **Books API:**
     - Fetch all books or random samples.

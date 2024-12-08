@@ -54,7 +54,7 @@ This repository contains the backend logic and API endpoints for the Book E-comm
 
 4. **Run the Application**  
      ```bash
-     npm run dev
+     node app.js
      ```
 The application will be available at http://localhost:3000.
 

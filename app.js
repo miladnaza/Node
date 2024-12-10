@@ -414,8 +414,191 @@ app.get("/api/reviews/book/:bookId", async (req, res) => {
     }
 });
 
+const cartSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    items: [
+      {
+        bookId: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+        quantity: { type: Number, required: true },
+      },
+    ],
+  });
+  
+  const Cart = mongoose.model("Cart", cartSchema);
+  
+  // Add book to cart
+  app.post("/api/cart", async (req, res) => {
+    const { userId, bookId, quantity } = req.body;
+  
+    if (!userId || !bookId || !quantity) {
+      return res.status(400).json({ error: "All fields are required: userId, bookId, quantity" });
+    }
+  
+    try {
+      // Find the user's cart or create a new one
+      let cart = await Cart.findOne({ userId });
+  
+      if (!cart) {
+        cart = new Cart({ userId, items: [] });
+      }
+  
+      // Check if the book already exists in the cart
+      const existingItem = cart.items.find((item) => item.bookId.toString() === bookId);
+  
+      if (existingItem) {
+        // Update quantity if the book is already in the cart
+        existingItem.quantity += quantity;
+      } else {
+        // Add the new book to the cart
+        cart.items.push({ bookId, quantity });
+      }
+  
+      await cart.save();
+      res.status(200).json({ message: "Book added to cart successfully", cart });
+    } catch (error) {
+      console.error("Error adding book to cart:", error.message);
+      res.status(500).json({ error: "Failed to add book to cart" });
+    }
+  });
 
+  app.get("/api/cart/:userId", async (req, res) => {
+    const { userId } = req.params;
+  
+    try {
+      const cart = await Cart.findOne({ userId }).populate("items.bookId");
+      if (!cart) {
+        return res.status(404).json({ message: "Cart not found for this user" });
+      }
+  
+      const cartWithBookDetails = {
+        userId: cart.userId,
+        items: cart.items.map((item) => ({
+          bookId: item.bookId?._id || null,
+          shortTitle: item.bookId?.shortTitle || "Unknown",
+          fullTitle: item.bookId?.fullTitle || "Unknown",
+          price: item.bookId?.price || 0,
+          discountedPrice: item.bookId
+            ? (item.bookId.price - 5).toFixed(2)
+            : "0.00",
+          category: item.bookId?.category || "Unknown",
+          author: item.bookId?.author || "Unknown",
+          stock: item.bookId?.stock || 0,
+          quantity: item.quantity,
+        })),
+      };
+  
+      res.status(200).json(cartWithBookDetails);
+    } catch (error) {
+      console.error("Error fetching cart:", error.message);
+      res.status(500).json({ error: "Failed to fetch cart" });
+    }
+  });
+  
 
+  ///////////////////////////////////////
+  const wishlistSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    items: [
+      {
+        bookId: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
+      },
+    ],
+  });
+  // Add a book to the wishlist
+app.post("/api/wishlist", async (req, res) => {
+    const { userId, bookId } = req.body;
+  
+    if (!userId || !bookId) {
+      return res.status(400).json({ error: "All fields are required: userId, bookId" });
+    }
+  
+    try {
+      // Find or create the user's wishlist
+      let wishlist = await Wishlist.findOne({ userId });
+  
+      if (!wishlist) {
+        wishlist = new Wishlist({ userId, items: [] });
+      }
+  
+      // Check if the book is already in the wishlist
+      const existingItem = wishlist.items.find((item) => item.bookId.toString() === bookId);
+  
+      if (existingItem) {
+        return res.status(400).json({ message: "Book already in wishlist" });
+      }
+  
+      // Add the new book to the wishlist
+      wishlist.items.push({ bookId });
+  
+      await wishlist.save();
+      res.status(200).json({ message: "Book added to wishlist successfully", wishlist });
+    } catch (error) {
+      console.error("Error adding book to wishlist:", error.message);
+      res.status(500).json({ error: "Failed to add book to wishlist" });
+    }
+  });
+// Remove a book from the wishlist
+app.delete("/api/wishlist", async (req, res) => {
+    const { userId, bookId } = req.body;
+  
+    if (!userId || !bookId) {
+      return res.status(400).json({ error: "All fields are required: userId, bookId" });
+    }
+  
+    try {
+      const wishlist = await Wishlist.findOne({ userId });
+  
+      if (!wishlist) {
+        return res.status(404).json({ message: "Wishlist not found for this user" });
+      }
+  
+      // Remove the book from the wishlist
+      wishlist.items = wishlist.items.filter((item) => item.bookId.toString() !== bookId);
+  
+      await wishlist.save();
+      res.status(200).json({ message: "Book removed from wishlist successfully", wishlist });
+    } catch (error) {
+      console.error("Error removing book from wishlist:", error.message);
+      res.status(500).json({ error: "Failed to remove book from wishlist" });
+    }
+  });
+    
+  
+  const Wishlist = mongoose.model("Wishlist", wishlistSchema);
+  // Fetch wishlist with populated book details
+// Get wishlist by userId
+app.get("/api/wishlist/:userId", async (req, res) => {
+    const { userId } = req.params;
+  
+    try {
+      // Find the wishlist for the user and populate book details
+      const wishlist = await Wishlist.findOne({ userId }).populate("items.bookId");
+  
+      if (!wishlist) {
+        return res.status(404).json({ message: "Wishlist not found for this user" });
+      }
+  
+      // Format the response to include book details
+      const wishlistWithBookDetails = {
+        userId: wishlist.userId,
+        items: wishlist.items.map((item) => ({
+          bookId: item.bookId?._id || null,
+          shortTitle: item.bookId?.shortTitle || "Unknown",
+          fullTitle: item.bookId?.fullTitle || "Unknown",
+          price: item.bookId?.price || 0,
+          category: item.bookId?.category || "Unknown",
+          author: item.bookId?.author || "Unknown",
+        })),
+      };
+  
+      res.status(200).json(wishlistWithBookDetails);
+    } catch (error) {
+      console.error("Error fetching wishlist:", error.message);
+      res.status(500).json({ error: "Failed to fetch wishlist" });
+    }
+  });
+  
+  
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);

@@ -537,13 +537,8 @@ app.post("/api/wishlist", async (req, res) => {
       res.status(500).json({ error: "Failed to add book to wishlist" });
     }
   });
-// Remove a book from the wishlist
-app.delete("/api/wishlist", async (req, res) => {
-    const { userId, bookId } = req.body;
-  
-    if (!userId || !bookId) {
-      return res.status(400).json({ error: "All fields are required: userId, bookId" });
-    }
+  app.delete("/api/wishlist/:userId/:bookId", async (req, res) => {
+    const { userId, bookId } = req.params;
   
     try {
       const wishlist = await Wishlist.findOne({ userId });
@@ -553,16 +548,19 @@ app.delete("/api/wishlist", async (req, res) => {
       }
   
       // Remove the book from the wishlist
-      wishlist.items = wishlist.items.filter((item) => item.bookId.toString() !== bookId);
+      wishlist.items = wishlist.items.filter(item => item.bookId.toString() !== bookId);
   
       await wishlist.save();
-      res.status(200).json({ message: "Book removed from wishlist successfully", wishlist });
+      res.status(200).json({
+        message: "Book removed from wishlist successfully",
+        wishlist,
+      });
     } catch (error) {
       console.error("Error removing book from wishlist:", error.message);
       res.status(500).json({ error: "Failed to remove book from wishlist" });
     }
   });
-    
+  
   
   const Wishlist = mongoose.model("Wishlist", wishlistSchema);
   // Fetch wishlist with populated book details
@@ -588,6 +586,7 @@ app.get("/api/wishlist/:userId", async (req, res) => {
           price: item.bookId?.price || 0,
           category: item.bookId?.category || "Unknown",
           author: item.bookId?.author || "Unknown",
+          image:item.bookId?.image||"undown",
         })),
       };
   

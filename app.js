@@ -491,6 +491,7 @@ const cartSchema = new mongoose.Schema({
           category: item.bookId?.category || "Unknown",
           author: item.bookId?.author || "Unknown",
           stock: item.bookId?.stock || 0,
+          image:item.bookId?.image||"undown",
           quantity: item.quantity,
         })),
       };
@@ -502,6 +503,57 @@ const cartSchema = new mongoose.Schema({
     }
   });
   
+  // Endpoint to delete a book from the cart
+app.delete("/api/cart/:userId/:bookId", async (req, res) => {
+  const { userId, bookId } = req.params;
+
+  try {
+    // Find the user's cart
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found for this user" });
+    }
+
+    // Filter out the book to delete
+    const updatedItems = cart.items.filter(item => item.bookId.toString() !== bookId);
+
+    if (updatedItems.length === cart.items.length) {
+      return res.status(404).json({ message: "Book not found in cart" });
+    }
+
+    // Update the cart with the remaining items
+    cart.items = updatedItems;
+    await cart.save();
+
+    res.status(200).json({ message: "Book removed from cart successfully", cart });
+  } catch (error) {
+    console.error("Error removing book from cart:", error.message);
+    res.status(500).json({ error: "Failed to remove book from cart" });
+  }
+});
+app.delete("/api/cart/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    // Find the user's cart
+    const cart = await Cart.findOne({ userId });
+
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found for this user" });
+    }
+
+    // Clear all items in the cart
+    cart.items = [];
+    await cart.save();
+
+    res.status(200).json({ message: "All items removed from cart successfully", cart });
+  } catch (error) {
+    console.error("Error removing all items from cart:", error.message);
+    res.status(500).json({ error: "Failed to remove all items from cart" });
+  }
+});
+
 
   ///////////////////////////////////////
   const wishlistSchema = new mongoose.Schema({

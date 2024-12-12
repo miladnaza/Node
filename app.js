@@ -212,7 +212,7 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", userSchema);
-const secret = "Niloofar"
+const secret = "BookStore"
 
 // Register Endpoint
 app.post('/register', async (req, res) => {
@@ -632,7 +632,7 @@ app.get('/user/detail', authenticateJWT, async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Return user details, but exclude sensitive information like password
+    // Return user details
     const userInfo = {
       name: `${user.firstName} ${user.lastName}`,
       email: user.email,

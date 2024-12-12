@@ -300,6 +300,49 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ message: 'Server error. Please try again.' });
     }
 });
+
+
+// Middleware to authenticate JWT
+const authenticateJWT = (req, res, next) => {
+  const token = req.header('Authorization') && req.header('Authorization').split(' ')[1]; // Extract token
+
+  if (!token) {
+    return res.status(403).json({ message: 'No token provided' });
+  }
+
+  jwt.verify(token, secret, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: 'Invalid token' });
+    }
+    req.user = decoded;  // Attach the decoded user info to the request object
+    next();
+  });
+};
+
+
+app.get('/user/detail', authenticateJWT, async (req, res) => {
+try {
+  const userEmail = req.user.email;  // Get email from decoded JWT
+  const user = await User.findOne({ email: userEmail });
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // Return user details
+  const userInfo = {
+    name: `${user.firstName} ${user.lastName}`,
+    email: user.email,
+    phone: user.phoneNumber,
+  };
+
+  res.json(userInfo);
+} catch (error) {
+  console.error('Error retrieving user:', error);
+  res.status(500).json({ message: 'Server error. Please try again.' });
+}
+});
+
   
 
 // API route to submit a new review and update book ratings
@@ -656,6 +699,7 @@ app.get("/api/wishlist/:userId", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch wishlist" });
     }
   });
+
   
   
 // Start the server

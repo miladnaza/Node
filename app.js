@@ -3,6 +3,7 @@ const cors = require("cors"); // Import cors
 const mongoose = require("mongoose");
 require('dotenv').config();
 const app = express();
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 3000;
 const bcrypt = require('bcryptjs'); // Use bcryptjs for password hashing
 
@@ -211,6 +212,7 @@ const userSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", userSchema);
+const secret = "Niloofar"
 
 // Register Endpoint
 app.post('/register', async (req, res) => {
@@ -277,6 +279,12 @@ app.post('/login', async (req, res) => {
             return res.status(401).json({ message: 'The password does not match.' });
         }
 
+        const token = jwt.sign(
+          { userId: user._id, email: user.email },
+          secret, // Use a secret key for signing
+          { expiresIn: '1h' } // Token expiration time
+      );
+
         res.status(200).json({
             message: 'Login successful!',
             user: {
@@ -285,7 +293,7 @@ app.post('/login', async (req, res) => {
                 lastName: user.lastName,
                 phoneNumber: user.phoneNumber,
                 email: user.email,
-            },
+            },token,
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -596,8 +604,49 @@ app.get("/api/wishlist/:userId", async (req, res) => {
       res.status(500).json({ error: "Failed to fetch wishlist" });
     }
   });
+
+  // Middleware to authenticate JWT
+  const authenticateJWT = (req, res, next) => {
+    const token = req.header('Authorization') && req.header('Authorization').split(' ')[1]; // Extract token
   
+    if (!token) {
+      return res.status(403).json({ message: 'No token provided' });
+    }
   
+    jwt.verify(token, secret, (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ message: 'Invalid token' });
+      }
+      req.user = decoded;  // Attach the decoded user info to the request object
+      next();
+    });
+  };
+  
+ 
+app.get('/user/detail', authenticateJWT, async (req, res) => {
+  try {
+    const userEmail = req.user.email;  // Get email from decoded JWT
+    const user = await User.findOne({ email: userEmail });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return user details, but exclude sensitive information like password
+    const userInfo = {
+      name: `${user.firstName} ${user.lastName}`,
+      email: user.email,
+      phone: user.phoneNumber,
+    };
+
+    res.json(userInfo);
+  } catch (error) {
+    console.error('Error retrieving user:', error);
+    res.status(500).json({ message: 'Server error. Please try again.' });
+  }
+});
+
+
 // Start the server
 app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
